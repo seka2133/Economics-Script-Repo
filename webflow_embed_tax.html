@@ -1,0 +1,160 @@
+<!--This embed template can be used to create any html-python calculator operating with Pyscript-->
+<html>
+<head>
+<title>Reverse Income Tax Calculator</title>
+<link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+<script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+<style>
+	.CalculatorDiv{
+  height: 100%;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border: 5px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: #F8F8FF;
+  text-align: left;
+  overflow-x: auto;
+  overflow-y: auto;
+  font-family: var(--selected-website-font-applied-everywhere);
+  }
+  .TotalDiv{
+  height: 100%;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: hsla(0, 0.00%, 76.50%, 1.00);
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-bottom-color: hsla(0, 0.00%, 76.50%, 1.00);
+  }
+  .submit-button {
+  margin-right:5px;
+  margin-left:5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: var(--website-background-green);
+  font-family: var(--selected-website-font-applied-everywhere);
+  font-style: normal;
+}
+	.submit-button {
+  margin-right:5px;
+  margin-left:5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: var(--website-background-green);
+  font-family: var(--selected-website-font-applied-everywhere);
+  font-style: normal;
+}
+	.submit-button:hover {
+  color: white;
+}
+	.input {
+  border: 1px solid grey;
+  border-radius: 4px;
+}
+</style>
+</head>
+<body>
+<div class="TotalDiv">
+<div id="calculator" class= "CalculatorDiv">
+<p style="font-style: bold; text-align: center">Reverse Income Tax Calculator</p>
+<div id="input">
+<p style="font-style: normal; text-align: left">Enter your desired after-tax income: $<span contenteditable="true"><input id="user_input" class="input" type="text" style="max-width:4rem" value="10000" placeholder="10000" pys-onKeyPress="calculate_tax"/></span><button id="submit_button" class="submit-button" type="submit" pys-onClick="calculate_tax">Calculate!</button></p>
+</div>
+<div style="font-style: normal; font-family: var(--selected-website-font-applied-everywhere); text-align: left" id="output">
+<py-script>
+from js import console, document
+r_t =[0.10, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37, 0] # 0 added to offset at the end
+B_t = [0, 11000, 44725, 95375, 182100,231250, 578125, 1000000000] #huge number at the end to avoid problems with using float('inf')
+
+def tax_ineq(income, B_t):
+    for n in range(0, len(B_t)):
+        if B_t[n-1] < income < B_t[n]:
+            return n
+        n += 1
+    return -1
+
+def taxes_sum(pre_tax_income, r_t, B_t):
+  # initialize the sum to zero
+  s = 0
+  n = tax_ineq(income=pre_tax_income,B_t=B_t) #This is different than the Reverse-Income-Tax Inequality Below!!!
+
+  # loop from 0 to n
+  for i in range(0, n):
+    # add the term to the sum, B_t
+    s += r_t[i-1] * (B_t[i] - B_t[i-1])
+    t = (r_t[i] * (pre_tax_income - B_t[i]))
+  # return the sum
+  return s + t # Returns sum approximation
+
+def n_coefficient_ineq(I_a, r_t, B_t): # finds n for which ineq is true
+    # initialize n to zero
+    n = 0
+    # loop until the inequality is satisfied or n exceeds the length of r_t or B_t
+    for n in range(0, len(r_t)):
+        # calculate the left and right sides of the inequality
+        left = (B_t[n-1] + 1)
+        left_sum = (sum(r_t[i - 1] * (B_t[i] - B_t[i - 1]) for i in range(0, n)) + r_t[n-1] * ((B_t[n-1] + 1) - B_t[n-1]))
+        right = B_t[n]
+        right_sum = sum(r_t[i] * (B_t[i+1] - B_t[i]) for i in range(0, n))
+        left_total = left - left_sum
+        right_total = right - right_sum
+
+        # check if the inequality holds
+        if left_total < I_a < right_total:
+            # return the value of n
+            print(f"{left_total} < n < {right_total}")
+            #print(f"n={n}")
+            return n
+        # increment n by one
+        n += 1
+    # return -1 if no solution is found
+    return -1
+
+
+
+def pre_income_tax_sum(I_a, r_t, B_t):
+  # initialize the numerator and denominator
+  n=n_coefficient_ineq(I_a,r_t,B_t)
+  denominator = 1 - r_t[n-1]
+  #print(denominator)
+  # loop from 0 to n
+  num = I_a
+  for i in range(0, n):
+    # add the term to the numerator
+    num += r_t[i-1] * (B_t[i] - B_t[i-1])
+  # subtract the last term from the numerator
+  subtract = (r_t[n-1] * B_t[n-1])
+  #print(f"a={a}")
+  numerator = num - subtract
+  #print(f"numerator={numerator}")
+  # return the quotient
+  return numerator / denominator
+
+def calculate_tax(*args, **kwargs):
+  after_tax_input = float(document.getElementById("user_input").value)
+  needed_pre_tax_income = pre_income_tax_sum(I_a=after_tax_input,r_t=r_t,B_t=B_t)
+  taxes_paid = taxes_sum(pre_tax_income=needed_pre_tax_income,r_t=r_t,B_t=B_t)
+  document.getElementById("output").innerHTML = f"<p>To achieve an after-tax income of ${after_tax_input}, you need to earn ${round(needed_pre_tax_income,2)}. Taxes Paid: ${round(taxes_paid,2)}"
+</py-script>
+</div>
+</div>
+</div>
+</body>
+</html>
